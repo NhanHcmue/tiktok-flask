@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flafrom flask import Flask, request, jsonify
 import requests, re, time, os
 
 app = Flask(__name__)
@@ -15,19 +15,12 @@ def get_tiktok_views(url, max_retry=3, delay=3):
         try:
             r = requests.get(url, headers=HEADERS, timeout=10)
             if r.status_code != 200:
-                print(f"[Attempt {attempt}] Request thất bại: {r.status_code}")
                 time.sleep(delay)
                 continue
-
             match = re.search(r'"playCount":(\d+)', r.text)
             if match:
-                print(f"[Attempt {attempt}] Lấy được view: {match.group(1)}")
                 return int(match.group(1))
-            else:
-                print(f"[Attempt {attempt}] Không tìm thấy view trong HTML")
-                time.sleep(delay)
-        except requests.RequestException as e:
-            print(f"[Attempt {attempt}] Lỗi request: {e}")
+        except requests.RequestException:
             time.sleep(delay)
     return None
 
@@ -37,15 +30,15 @@ def get_views_api():
     data = request.json
     urls = data.get("urls", [])
     if not urls:
-        return jsonify({"error": "Không có urls"}), 400
+        return jsonify({"error": "No URLs provided"}), 400
 
     result = {}
     for url in urls:
-        views = get_tiktok_views(url)
-        result[url] = views
+        result[url] = get_tiktok_views(url)
     return jsonify(result)
 
 # --- Chạy app ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # Railway sẽ gán PORT động
-    app.run(host="0.0.0.0", port=port)
+    # Debug off để production, dùng gunicorn khi deploy
+    app.run(host="0.0.0.0", port=port, debug=False)
